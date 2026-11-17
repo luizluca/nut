@@ -2166,6 +2166,8 @@ void upsdrv_cleanup(void) {
 }
 
 void upsdrv_initups(void) {
+	unsigned int	tries = 0;
+
 	/* From docs/new-drivers.txt:
 	 * Open the port (`device_path`) and do any low-level
 	 * things that it may need to start using that port.
@@ -2197,11 +2199,29 @@ void upsdrv_initups(void) {
 			strncpy(porta, DEFAULTPORT, sizeof(porta) - 1);
 		else
 			strncpy(porta, device_path, sizeof(porta) - 1);
-		serial_fd = openfd(porta, baudrate);
+
+		while (tries < 6 && INVALID_FD_SER(serial_fd)) {
+			errno = 0;
+			serial_fd = openfd(porta, baudrate);
+			if (INVALID_FD_SER(serial_fd)) {
+				tries++;
+				if (errno == ENOENT) {
+					upsdebugx(1, "%s: %s absent (resetting), waiting 2s (%u/6)...", __func__, porta, tries);
+					usleep(2000000);
+				} else if (errno == EACCES) {
+					upsdebugx(1, "%s: %s waiting for udev permissions, waiting 500ms (%u/6)...", __func__, porta, tries);
+					usleep(500000);
+				} else {
+					upsdebugx(1, "%s: %s I/O stall (errno=%d), waiting 4s for USB reset (%u/6)...", __func__, porta, errno, tries);
+					usleep(4000000);
+				}
+			}
+		}
+
 		if (INVALID_FD_SER(serial_fd))
 			fatalx(EXIT_FAILURE, "Unable to open port %s with baud %d", porta, baudrate);
-		else
-			upsdebugx(1, "%s: Communication started on port %s, baud rate %d", __func__, porta, baudrate);
+
+		upsdebugx(1, "%s: Communication started on port %s, baud rate %d", __func__, porta, baudrate);
 	}	/* end if */
 	else
 		fatalx(EXIT_FAILURE, "Unable to define port and baud");
