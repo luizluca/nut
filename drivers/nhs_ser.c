@@ -1656,7 +1656,7 @@ static void interpret_pkt_data(void) {
 	upsdebugx(4, "Set UPS status as OFF and start checking. s_battery_mode is %d", lastpktdata.s_battery_mode);
 
 	if (got_hwinfo) {
-		if (lastpkthwinfo.s_220V_in) {
+		if (lastpkthwinfo.s_220V_in || lastpktdata.s_220_in) {
 			upsdebugx(4, "I'm on 220v IN!. My undervoltage is %u", lastpkthwinfo.undervoltagein220V);
 			min_input_power = lastpkthwinfo.undervoltagein220V;
 		}	/* end if */
@@ -1820,10 +1820,11 @@ static void interpret_pkt_data(void) {
 	dstate_setinfo("input.voltage.minimum", "%0.2f", lastpktdata.vacinrmsmin);
 
 	if (got_hwinfo) {
+		bool is_220v_in = (lastpkthwinfo.s_220V_in || lastpktdata.s_220_in);
 		dstate_setinfo("ups.beeper.status", "%d", !lastpkthwinfo.c_buzzer_disable);
 
-		vin_underv = lastpkthwinfo.s_220V_in ? lastpkthwinfo.undervoltagein220V : lastpkthwinfo.undervoltagein120V;
-		vin_overv = lastpkthwinfo.s_220V_in ? lastpkthwinfo.overvoltagein220V : lastpkthwinfo.overvoltagein120V;
+		vin_underv = is_220v_in ? lastpkthwinfo.undervoltagein220V : lastpkthwinfo.undervoltagein120V;
+		vin_overv = is_220v_in ? lastpkthwinfo.overvoltagein220V : lastpkthwinfo.overvoltagein120V;
 		perc = f_equal(get_vin_perc("vin_low_warn_perc"), get_vin_perc("vin_low_crit_perc")) ?  2 : 1;
 		vin_low_warn = vin_underv + (vin_underv * ((get_vin_perc("vin_low_warn_perc") * perc) / 100.0));
 		dstate_setinfo("input.voltage.low.warning", "%0.2f", vin_low_warn);
@@ -1834,12 +1835,12 @@ static void interpret_pkt_data(void) {
 		vin_high_crit = vin_overv + (vin_overv * (get_vin_perc("vin_high_crit_perc") / 100.0));
 		dstate_setinfo("input.voltage.high.critical", "%0.2f", vin_high_crit);
 
-		dstate_setinfo("input.transfer.low", "%u", lastpkthwinfo.s_220V_in ? lastpkthwinfo.undervoltagein220V : lastpkthwinfo.undervoltagein120V);
-		dstate_setinfo("input.transfer.high", "%u", lastpkthwinfo.s_220V_in ? lastpkthwinfo.overvoltagein220V : lastpkthwinfo.overvoltagein120V);
+		dstate_setinfo("input.transfer.low", "%u", is_220v_in ? lastpkthwinfo.undervoltagein220V : lastpkthwinfo.undervoltagein120V);
+		dstate_setinfo("input.transfer.high", "%u", is_220v_in ? lastpkthwinfo.overvoltagein220V : lastpkthwinfo.overvoltagein120V);
 
 		/* FIXME: Move nominal settings to upsdrv_initinfo()
 		 *  or at worst to interpret_pkt_hwinfo() */
-		vin = lastpkthwinfo.s_220V_in ? lastpkthwinfo.tensionout220V : lastpkthwinfo.tensionout120V;
+		vin = is_220v_in ? lastpkthwinfo.tensionout220V : lastpkthwinfo.tensionout120V;
 		dstate_setinfo("input.voltage.nominal", "%u", vin);
 		vout = lastpkthwinfo.s_220V_out ? lastpkthwinfo.tensionout220V : lastpkthwinfo.tensionout120V;
 		dstate_setinfo("output.voltage.nominal", "%u", vout);
