@@ -1768,11 +1768,6 @@ static void interpret_pkt_data(void) {
 	if (lastpktdata.s_fast_network_failure)
 		alarm_set("[FAST NETWORK FAILURE]");
 
-	if (lastpktdata.s_220_in)
-		alarm_set("[220V IN]");
-	if (lastpktdata.s_220_out)
-		alarm_set("[220V OUT]");
-
 	/* Commit alarm and status information */
 	alarm_commit(); /* alarm first */
 	status_commit();
@@ -1842,7 +1837,7 @@ static void interpret_pkt_data(void) {
 		 *  or at worst to interpret_pkt_hwinfo() */
 		vin = is_220v_in ? lastpkthwinfo.tensionout220V : lastpkthwinfo.tensionout120V;
 		dstate_setinfo("input.voltage.nominal", "%u", vin);
-		vout = lastpkthwinfo.s_220V_out ? lastpkthwinfo.tensionout220V : lastpkthwinfo.tensionout120V;
+		vout = (lastpkthwinfo.s_220V_out || lastpktdata.s_220_out) ? lastpkthwinfo.tensionout220V : lastpkthwinfo.tensionout120V;
 		dstate_setinfo("output.voltage.nominal", "%u", vout);
 	}	/* end if */
 
