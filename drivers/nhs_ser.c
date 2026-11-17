@@ -1830,9 +1830,9 @@ static void interpret_pkt_data(void) {
 		dstate_setinfo("input.voltage.low.warning", "%0.2f", vin_low_warn);
 		vin_low_crit = vin_underv + (vin_underv * (get_vin_perc("vin_low_crit_perc") / 100.0));
 		dstate_setinfo("input.voltage.low.critical", "%0.2f", vin_low_crit);
-		vin_high_warn = vin_overv + (vin_overv * ((get_vin_perc("vin_high_warn_perc") * perc) / 100.0));
+		vin_high_warn = vin_overv - (vin_overv * ((get_vin_perc("vin_high_warn_perc") * perc) / 100.0));
 		dstate_setinfo("input.voltage.high.warning", "%0.2f", vin_high_warn);
-		vin_high_crit = vin_overv + (vin_overv * (get_vin_perc("vin_high_crit_perc") / 100.0));
+		vin_high_crit = vin_overv - (vin_overv * (get_vin_perc("vin_high_crit_perc") / 100.0));
 		dstate_setinfo("input.voltage.high.critical", "%0.2f", vin_high_crit);
 
 		dstate_setinfo("input.transfer.low", "%u", is_220v_in ? lastpkthwinfo.undervoltagein220V : lastpkthwinfo.undervoltagein120V);
